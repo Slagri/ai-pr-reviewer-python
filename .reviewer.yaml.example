@@ -1,0 +1,36 @@
+# .reviewer.yaml — Per-repository configuration for the AI PR Reviewer
+# Place this file in the root of your repository.
+
+# Enable or disable reviews for this repository
+enabled: true
+
+# File paths to ignore (glob patterns)
+ignore_paths:
+  - "vendor/**"
+  - "generated/**"
+  - "*.lock"
+  - "**/*.min.js"
+
+# Authors to ignore (bot accounts, etc.)
+ignore_authors:
+  - "dependabot[bot]"
+  - "renovate[bot]"
+
+# Maximum number of files to review per PR
+# PRs with more files will be truncated to this limit
+max_files: 50
+
+# Minimum severity threshold for findings
+# Only findings at or above this level will be reported
+# Options: critical, high, medium, low, info
+severity_threshold: low
+
+# Additional instructions for the AI reviewer
+# Use this to provide project-specific context
+extra_instructions: |
+  This is a Python FastAPI application.
+  Pay special attention to:
+  - SQL injection in database queries
+  - Missing authentication on API endpoints
+  - Hardcoded secrets or credentials
+  - Type safety with Pydantic models
