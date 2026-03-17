@@ -1,0 +1,18 @@
+{
+  "_description": "Azure OpenAI 429 rate limit response. Tests must verify retry logic and backoff.",
+  "status_code": 429,
+  "headers": {
+    "retry-after": "2",
+    "x-ratelimit-remaining-requests": "0",
+    "x-ratelimit-remaining-tokens": "0",
+    "x-ratelimit-reset-requests": "2s",
+    "x-ratelimit-reset-tokens": "5s"
+  },
+  "body": {
+    "error": {
+      "message": "Rate limit reached for gpt-5.4 in organization org-xxx on requests per min (RPM): Limit 60, Used 60, Requested 1.",
+      "type": "tokens",
+      "code": "rate_limit_exceeded"
+    }
+  }
+}

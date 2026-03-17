@@ -1,0 +1,39 @@
+{
+  "id": "chatcmpl-multi789",
+  "object": "chat.completion",
+  "created": 1710000001,
+  "model": "gpt-5.4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_file1",
+            "type": "function",
+            "function": {
+              "name": "get_file_content",
+              "arguments": "{\"path\": \"src/auth/register.py\"}"
+            }
+          },
+          {
+            "id": "call_search1",
+            "type": "function",
+            "function": {
+              "name": "search_codebase",
+              "arguments": "{\"query\": \"password_hash\", \"file_pattern\": \"*.py\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 3200,
+    "completion_tokens": 92,
+    "total_tokens": 3292
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "_description": "Simulates SSE chunks for the final review response (finish_reason=stop). The JSON arrives token-by-token. Tests must verify the complete JSON is reassembled correctly.",
+  "chunks": [
+    {
+      "id": "chatcmpl-stream2",
+      "object": "chat.completion.chunk",
+      "created": 1710000004,
+      "model": "gpt-5.4",
+      "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "finish_reason": null}]
+    },
+    {
+      "id": "chatcmpl-stream2",
+      "object": "chat.completion.chunk",
+      "created": 1710000004,
+      "model": "gpt-5.4",
+      "choices": [{"index": 0, "delta": {"content": "```json\n{\"findings\":"}, "finish_reason": null}]
+    },
+    {
+      "id": "chatcmpl-stream2",
+      "object": "chat.completion.chunk",
+      "created": 1710000004,
+      "model": "gpt-5.4",
+      "choices": [{"index": 0, "delta": {"content": " [{\"path\": \"src/auth/"}, "finish_reason": null}]
+    },
+    {
+      "id": "chatcmpl-stream2",
+      "object": "chat.completion.chunk",
+      "created": 1710000004,
+      "model": "gpt-5.4",
+      "choices": [{"index": 0, "delta": {"content": "register.py\", \"line\": 34, \"severity\":"}, "finish_reason": null}]
+    },
+    {
+      "id": "chatcmpl-stream2",
+      "object": "chat.completion.chunk",
+      "created": 1710000004,
+      "model": "gpt-5.4",
+      "choices": [{"index": 0, "delta": {"content": " \"high\", \"category\": \"security\","}, "finish_reason": null}]
+    },
+    {
+      "id": "chatcmpl-stream2",
+      "object": "chat.completion.chunk",
+      "created": 1710000004,
+      "model": "gpt-5.4",
+      "choices": [{"index": 0, "delta": {"content": " \"message\": \"password logged in plaintext\","}, "finish_reason": null}]
+    },
+    {
+      "id": "chatcmpl-stream2",
+      "object": "chat.completion.chunk",
+      "created": 1710000004,
+      "model": "gpt-5.4",
+      "choices": [{"index": 0, "delta": {"content": " \"suggestion\": \"remove debug log\"}],"}, "finish_reason": null}]
+    },
+    {
+      "id": "chatcmpl-stream2",
+      "object": "chat.completion.chunk",
+      "created": 1710000004,
+      "model": "gpt-5.4",
+      "choices": [{"index": 0, "delta": {"content": " \"summary\": \"1 security issue found\"}\n```"}, "finish_reason": null}]
+    },
+    {
+      "id": "chatcmpl-stream2",
+      "object": "chat.completion.chunk",
+      "created": 1710000004,
+      "model": "gpt-5.4",
+      "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 8500,
+    "completion_tokens": 150,
+    "total_tokens": 8650
+  }
+}
