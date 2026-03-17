@@ -216,13 +216,135 @@ def validate_phase_1() -> ValidationResult:
 
 
 def validate_phase_2() -> ValidationResult:
-    """Phase 2: GitHub Provider — auth, webhooks, review posting.
-
-    Placeholder — will be implemented when Phase 2 is built.
-    """
+    """Phase 2: GitHub Provider — auth, webhooks, review posting."""
     result = ValidationResult("2")
     print("\n=== Phase 2: GitHub Provider Validation ===\n")
-    result.check("Phase 2 not yet implemented", False, "build Phase 2 first")
+
+    # 1. JWT generation works
+    try:
+        import httpx
+
+        from reviewer.providers.github.client import GitHubAuth
+        from tests.fixtures.test_rsa_key import TEST_PRIVATE_KEY
+
+        auth = GitHubAuth(
+            app_id="test-123",
+            private_key=TEST_PRIVATE_KEY,
+            http_client=httpx.AsyncClient(),
+        )
+        token = auth._generate_jwt()
+        result.check("JWT generation succeeds", len(token) > 100, f"token length: {len(token)}")
+
+        import jwt as pyjwt
+
+        decoded = pyjwt.decode(
+            token,
+            algorithms=["RS256"],
+            options={"verify_signature": False, "verify_exp": False},
+        )
+        result.check("JWT has correct issuer", decoded["iss"] == "test-123")
+        result.check("JWT has iat and exp", "iat" in decoded and "exp" in decoded)
+    except Exception as e:
+        result.check("JWT generation", False, str(e))
+
+    # 2. Token caching works
+    try:
+        import time
+
+        auth._token_cache[99] = ("test-token", time.time() + 3600)
+
+        import asyncio
+
+        cached = asyncio.new_event_loop().run_until_complete(auth.get_installation_token(99))
+        result.check("Token caching returns cached value", cached == "test-token")
+    except Exception as e:
+        result.check("Token caching", False, str(e))
+
+    # 3. Signature verification works end-to-end
+    try:
+        import hashlib
+        import hmac as hmac_mod
+
+        from reviewer.providers.github.webhook import verify_signature
+
+        payload = b'{"test": true}'
+        secret = "webhook-secret"
+        sig = "sha256=" + hmac_mod.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+        verify_signature(payload, sig, secret)
+        result.check("HMAC-SHA256 signature verification", True)
+
+        from reviewer.exceptions import SignatureError
+
+        try:
+            verify_signature(payload, "sha256=invalid", secret)
+            result.check("Rejects invalid signature", False, "should have raised")
+        except SignatureError:
+            result.check("Rejects invalid signature", True)
+    except Exception as e:
+        result.check("Signature verification", False, str(e))
+
+    # 4. Webhook parsing with real fixture
+    try:
+        from reviewer.providers.github.webhook import parse_webhook
+        from tests.fixtures import load_github_fixture
+
+        raw = load_github_fixture("pull_request_opened")
+        event = parse_webhook(raw, "pull_request", "test-delivery")
+        result.check(
+            "Webhook parsing produces valid event",
+            event is not None
+            and event.pull_request.number == 42
+            and event.installation_id == 98765,
+        )
+
+        # Draft skip
+        raw_draft = load_github_fixture("pull_request_opened")
+        raw_draft["pull_request"]["draft"] = True
+        skipped = parse_webhook(raw_draft, "pull_request", "test-delivery")
+        result.check("Draft PRs are skipped", skipped is None)
+    except Exception as e:
+        result.check("Webhook parsing", False, str(e))
+
+    # 5. Review comment building
+    try:
+        from reviewer.models import Category, Finding, Severity
+        from reviewer.providers.github.review import (
+            _build_review_comments,
+            _determine_review_event,
+        )
+
+        findings = (
+            Finding(
+                path="test.py",
+                line=10,
+                severity=Severity.HIGH,
+                category=Category.SECURITY,
+                message="test finding",
+                suggestion="fix it",
+            ),
+        )
+        comments = _build_review_comments(findings)
+        result.check(
+            "Review comments built correctly",
+            len(comments) == 1
+            and comments[0]["path"] == "test.py"
+            and "HIGH" in comments[0]["body"],
+        )
+
+        event_type = _determine_review_event(findings)
+        result.check(
+            "High severity triggers REQUEST_CHANGES",
+            event_type == "REQUEST_CHANGES",
+        )
+
+        empty_event = _determine_review_event(())
+        result.check(
+            "No findings triggers COMMENT",
+            empty_event == "COMMENT",
+        )
+    except Exception as e:
+        result.check("Review comment building", False, str(e))
+
     return result
 
 
