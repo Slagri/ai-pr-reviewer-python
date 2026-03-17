@@ -5,6 +5,7 @@ check run → fetch config → fetch diffs → run agent → post review → upd
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -32,6 +33,7 @@ async def run_review_pipeline(
     model: str,
     max_iterations: int = 10,
     max_files: int = 50,
+    cancel_event: asyncio.Event | None = None,
 ) -> Review:
     """Execute the full review pipeline for a webhook event.
 
@@ -72,6 +74,7 @@ async def run_review_pipeline(
             model=model,
             max_iterations=max_iterations,
             max_files=max_files,
+            cancel_event=cancel_event,
             log=log,
         )
 
@@ -127,6 +130,7 @@ async def _execute_review(
     model: str,
     max_iterations: int,
     max_files: int,
+    cancel_event: asyncio.Event | None = None,
     log: Any,
 ) -> Review:
     """Execute the review (steps 2-5), separated for clean error handling."""
@@ -176,6 +180,7 @@ async def _execute_review(
         user_prompt=user_prompt,
         tool_executor=tool_executor,
         max_iterations=max_iterations,
+        cancel_event=cancel_event,
     )
 
     return build_review_from_agent_result(review_data, trace, pr, model)

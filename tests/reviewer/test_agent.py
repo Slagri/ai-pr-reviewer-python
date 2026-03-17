@@ -303,6 +303,88 @@ class TestRunReviewAgent:
         # Should have logged the error but continued
         assert any(s.error for s in trace.steps)
 
+    @pytest.mark.asyncio
+    async def test_cancellation_aborts_review(
+        self, mock_client: AsyncMock, mock_executor: ToolExecutor
+    ) -> None:
+        """Cancelled event should abort the agent loop."""
+        import asyncio
+
+        cancel = asyncio.Event()
+        cancel.set()  # Already cancelled before first iteration
+
+        with pytest.raises(AgentError, match="cancelled"):
+            await run_review_agent(
+                client=mock_client,
+                model="gpt-5.4",
+                system_prompt="Review",
+                user_prompt="PR",
+                tool_executor=mock_executor,
+                cancel_event=cancel,
+            )
+
+        # Should not have made any API calls
+        mock_client.chat.completions.create.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_length_finish_reason_returns_partial(
+        self, mock_client: AsyncMock, mock_executor: ToolExecutor
+    ) -> None:
+        """finish_reason=length should return partial review, not crash."""
+        partial_json = '```json\n{"findings": [], "summary": "partial"}\n```'
+        mock_client.chat.completions.create.return_value = _make_mock_response(
+            content=partial_json, finish_reason="length"
+        )
+
+        result, _trace = await run_review_agent(
+            client=mock_client,
+            model="gpt-5.4",
+            system_prompt="Review",
+            user_prompt="PR",
+            tool_executor=mock_executor,
+        )
+
+        assert result["summary"] == "partial"
+
+    @pytest.mark.asyncio
+    async def test_length_finish_reason_unparseable_content(
+        self, mock_client: AsyncMock, mock_executor: ToolExecutor
+    ) -> None:
+        """finish_reason=length with broken content returns fallback."""
+        mock_client.chat.completions.create.return_value = _make_mock_response(
+            content="incomplete json {...", finish_reason="length"
+        )
+
+        result, _trace = await run_review_agent(
+            client=mock_client,
+            model="gpt-5.4",
+            system_prompt="Review",
+            user_prompt="PR",
+            tool_executor=mock_executor,
+        )
+
+        assert "context length exceeded" in result["summary"]
+        assert result["findings"] == []
+
+    @pytest.mark.asyncio
+    async def test_length_finish_reason_no_content(
+        self, mock_client: AsyncMock, mock_executor: ToolExecutor
+    ) -> None:
+        """finish_reason=length with no content returns fallback."""
+        mock_client.chat.completions.create.return_value = _make_mock_response(
+            content=None, finish_reason="length"
+        )
+
+        result, _trace = await run_review_agent(
+            client=mock_client,
+            model="gpt-5.4",
+            system_prompt="Review",
+            user_prompt="PR",
+            tool_executor=mock_executor,
+        )
+
+        assert "context length exceeded" in result["summary"]
+
 
 class TestBuildReviewFromAgentResult:
     """Test Review model construction from agent output."""
