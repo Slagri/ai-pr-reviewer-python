@@ -1,0 +1,20 @@
+{
+  "_description": "Azure OpenAI content filter response. The model refused to generate output. Tests must handle this gracefully.",
+  "status_code": 400,
+  "body": {
+    "error": {
+      "message": "The response was filtered due to the prompt triggering Azure OpenAI's content management policy.",
+      "type": "invalid_request_error",
+      "code": "content_filter",
+      "inner_error": {
+        "code": "ResponsibleAIPolicyViolation",
+        "content_filter_result": {
+          "hate": {"filtered": false, "severity": "safe"},
+          "self_harm": {"filtered": false, "severity": "safe"},
+          "sexual": {"filtered": false, "severity": "safe"},
+          "violence": {"filtered": false, "severity": "safe"}
+        }
+      }
+    }
+  }
+}
