@@ -2,16 +2,24 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 import structlog
 from fastapi import FastAPI
+from openai import AsyncAzureOpenAI
 
 from reviewer.config import Settings
 from reviewer.middleware.logging import RequestLoggingMiddleware
 from reviewer.middleware.ratelimit import RateLimitMiddleware
 from reviewer.middleware.signature import SignatureVerificationMiddleware
+from reviewer.models import WebhookEvent
+from reviewer.providers.github.client import build_github_auth
+from reviewer.providers.github.review import GitHubReviewService
+from reviewer.queue.worker import WorkerPool
+from reviewer.reviewer.pipeline import run_review_pipeline
 from reviewer.server.dependencies import get_settings
 from reviewer.server.routes import health_router, webhook_router
 
@@ -51,16 +59,76 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         workers=settings.worker_count,
     )
 
-    # Worker pool will be initialized when providers are ready
-    app.state.worker_pool = None
+    # Build providers and worker pool
+    review_service, openai_client = _build_providers(settings)
+
+    async def handle_review(event: WebhookEvent, cancel_event: asyncio.Event) -> None:
+        if review_service is None or openai_client is None:
+            logger.error("review handler called but providers not configured")
+            return
+        await run_review_pipeline(
+            event=event,
+            review_service=review_service,
+            openai_client=openai_client,
+            model=settings.review_model,
+            max_iterations=settings.max_agent_iterations,
+            max_files=settings.max_files_per_review,
+            cancel_event=cancel_event,
+        )
+
+    pool = WorkerPool(
+        handle_review,
+        worker_count=settings.worker_count,
+        queue_capacity=settings.queue_capacity,
+    )
+    await pool.start()
+    app.state.worker_pool = pool
 
     yield
 
     # Shutdown
-    if app.state.worker_pool is not None:
-        await app.state.worker_pool.shutdown(drain_timeout=settings.shutdown_timeout)
-
+    await pool.shutdown(drain_timeout=settings.shutdown_timeout)
     logger.info("AI PR reviewer stopped")
+
+
+def _build_providers(
+    settings: Settings,
+) -> tuple[GitHubReviewService | None, AsyncAzureOpenAI | None]:
+    """Build provider clients from settings. Returns (None, None) if not configured."""
+    import httpx
+
+    if not settings.github_enabled:
+        logger.warning("GitHub provider not configured, reviews will be skipped")
+        return None, None
+
+    github_auth = build_github_auth(
+        app_id=settings.github_app_id or "",
+        private_key=(
+            settings.github_private_key.get_secret_value() if settings.github_private_key else None
+        ),
+        private_key_path=settings.github_private_key_path,
+    )
+
+    http_client = httpx.AsyncClient(timeout=30.0)
+    review_service = GitHubReviewService(auth=github_auth, http_client=http_client)
+
+    openai_kwargs: dict[str, Any] = {
+        "azure_endpoint": settings.azure_openai_endpoint,
+        "api_version": settings.azure_openai_api_version,
+    }
+    if settings.azure_openai_api_key is not None:
+        openai_kwargs["api_key"] = settings.azure_openai_api_key.get_secret_value()
+    else:
+        from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
+
+        credential = DefaultAzureCredential()
+        openai_kwargs["azure_ad_token_provider"] = get_bearer_token_provider(
+            credential, "https://cognitiveservices.azure.com/.default"
+        )
+
+    openai_client = AsyncAzureOpenAI(**openai_kwargs)
+
+    return review_service, openai_client
 
 
 def create_app() -> FastAPI:

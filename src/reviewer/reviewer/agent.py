@@ -6,6 +6,7 @@ feeds results back, and loops until it produces a final JSON review.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from typing import TYPE_CHECKING, Any
@@ -81,6 +82,7 @@ async def run_review_agent(
     user_prompt: str,
     tool_executor: ToolExecutor,
     max_iterations: int = 10,
+    cancel_event: asyncio.Event | None = None,
 ) -> tuple[dict[str, Any], AgentTrace]:
     """Run the AI review agent's tool-use loop.
 
@@ -90,7 +92,9 @@ async def run_review_agent(
     1. Send system + user message with tool definitions
     2. If finish_reason == "tool_calls": execute tools, append results, loop
     3. If finish_reason == "stop": parse JSON review, return
-    4. Stop after max_iterations to prevent infinite loops
+    4. If finish_reason == "length": context exceeded, return partial
+    5. Stop after max_iterations to prevent infinite loops
+    6. Check cancel_event between iterations to abort superseded reviews
     """
     trace = AgentTrace(model=model)
 
@@ -102,6 +106,11 @@ async def run_review_agent(
     tools: list[ChatCompletionToolParam] = TOOL_DEFINITIONS  # type: ignore[assignment]
 
     for iteration in range(1, max_iterations + 1):
+        # Check for cancellation (superseded by newer push)
+        if cancel_event is not None and cancel_event.is_set():
+            trace.finish()
+            raise AgentError("review cancelled: superseded by newer push")
+
         step_start = time.time()
 
         logger.info("agent iteration", iteration=iteration, max=max_iterations)
@@ -225,7 +234,28 @@ async def run_review_agent(
 
             return review_data, trace
 
-        # Case 3: Unexpected finish reason
+        # Case 3: Context length exceeded — return partial content if available
+        if choice.finish_reason == "length":
+            logger.warning("context length exceeded, returning partial review")
+            trace.add_step(
+                iteration,
+                error="context length exceeded",
+                duration_seconds=time.time() - step_start,
+            )
+            trace.finish()
+
+            if message.content:
+                try:
+                    return _parse_review_json(message.content), trace
+                except (json.JSONDecodeError, ValueError):
+                    pass
+
+            return {
+                "findings": [],
+                "summary": "Review incomplete: context length exceeded",
+            }, trace
+
+        # Case 4: Unexpected finish reason
         trace.add_step(
             iteration,
             error=f"unexpected finish_reason: {choice.finish_reason}",
