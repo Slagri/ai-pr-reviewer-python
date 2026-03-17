@@ -15,6 +15,8 @@ make test        # Run tests with coverage
 make lint        # Run ruff check + ruff format --check
 make typecheck   # Run mypy --strict
 make check       # Run all: lint + typecheck + test
+make validate PHASE=N  # Run milestone validation for phase N
+make validate-all      # Run all phase validations sequentially
 make run         # Start server (uvicorn)
 make run-debug   # Start with LOG_LEVEL=debug
 
@@ -42,6 +44,9 @@ make run-debug   # Start with LOG_LEVEL=debug
 - httpx mock transport for API mocking
 - Fixtures in conftest.py (shared) or test file (local)
 - 80% coverage enforced in CI
+- Realistic fixtures in tests/fixtures/ (actual API response shapes)
+- Integration tests in tests/integration/ validate cross-component behavior
+- Phase validation (make validate PHASE=N) must pass before marking phase complete
 
 ## Git Conventions
 - Conventional commits: feat:, fix:, refactor:, test:, ci:, docs:, chore:

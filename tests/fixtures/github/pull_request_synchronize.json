@@ -1,0 +1,43 @@
+{
+  "action": "synchronize",
+  "number": 42,
+  "before": "old_sha_0000000000000000000000000000000000000",
+  "after": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+  "pull_request": {
+    "number": 42,
+    "title": "Add input validation to user registration",
+    "body": "Updated with review feedback",
+    "head": {
+      "sha": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+      "ref": "feat/input-validation",
+      "repo": {
+        "full_name": "acme-corp/backend-api"
+      }
+    },
+    "base": {
+      "ref": "main",
+      "repo": {
+        "full_name": "acme-corp/backend-api"
+      }
+    },
+    "user": {
+      "login": "jsmith"
+    },
+    "draft": false,
+    "html_url": "https://github.com/acme-corp/backend-api/pull/42",
+    "diff_url": "https://github.com/acme-corp/backend-api/pull/42.diff",
+    "changed_files": 4,
+    "additions": 110,
+    "deletions": 15
+  },
+  "repository": {
+    "full_name": "acme-corp/backend-api",
+    "owner": {
+      "login": "acme-corp"
+    },
+    "name": "backend-api"
+  },
+  "installation": {
+    "id": 98765
+  }
+}

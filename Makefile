@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck check run run-debug clean
+.PHONY: install test lint typecheck check validate run run-debug clean
 
 install:
 	pip install -e ".[dev]"
@@ -14,6 +14,12 @@ typecheck:
 	mypy --strict src/
 
 check: lint typecheck test
+
+validate:
+	python -m tests.validate $(PHASE)
+
+validate-all:
+	python -m tests.validate
 
 run:
 	uvicorn reviewer.main:create_app --factory --host 0.0.0.0 --port 8000

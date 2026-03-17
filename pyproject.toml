@@ -66,6 +66,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "S106"]
 "tests/queue/__init__.py" = ["A005"]
+"tests/validate.py" = ["T201"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["reviewer"]

@@ -1,0 +1,21 @@
+{
+  "id": "chatcmpl-final456",
+  "object": "chat.completion",
+  "created": 1710000002,
+  "model": "gpt-5.4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "```json\n{\n  \"findings\": [\n    {\n      \"path\": \"src/auth/register.py\",\n      \"line\": 34,\n      \"severity\": \"high\",\n      \"category\": \"security\",\n      \"message\": \"password is logged in plaintext before hashing\",\n      \"suggestion\": \"Remove the debug log statement on line 34 that logs the raw password. Use structlog with explicit fields and never include credentials.\"\n    },\n    {\n      \"path\": \"src/auth/register.py\",\n      \"line\": 52,\n      \"severity\": \"medium\",\n      \"category\": \"bug\",\n      \"message\": \"email uniqueness check is not atomic with insert, allowing race conditions\",\n      \"suggestion\": \"Use a database unique constraint on the email column and catch IntegrityError instead of SELECT-then-INSERT.\"\n    },\n    {\n      \"path\": \"src/models/user.py\",\n      \"line\": 18,\n      \"severity\": \"low\",\n      \"category\": \"maintainability\",\n      \"message\": \"User model has no __repr__ — debugging will show unhelpful output\",\n      \"suggestion\": \"Add a __repr__ that includes id and email but NOT password_hash.\"\n    }\n  ],\n  \"summary\": \"Found 3 issues: 1 high-severity security concern (plaintext password logging), 1 medium-severity race condition in registration, and 1 low-severity maintainability improvement. The security issue should be fixed before merge.\"\n}\n```"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 8500,
+    "completion_tokens": 380,
+    "total_tokens": 8880
+  }
+}

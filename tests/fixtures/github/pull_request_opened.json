@@ -1,0 +1,41 @@
+{
+  "action": "opened",
+  "number": 42,
+  "pull_request": {
+    "number": 42,
+    "title": "Add input validation to user registration",
+    "body": "This PR adds Pydantic validation to the /register endpoint.\n\n- Validates email format\n- Enforces password length >= 12\n- Rejects disposable email domains",
+    "head": {
+      "sha": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "ref": "feat/input-validation",
+      "repo": {
+        "full_name": "acme-corp/backend-api"
+      }
+    },
+    "base": {
+      "ref": "main",
+      "repo": {
+        "full_name": "acme-corp/backend-api"
+      }
+    },
+    "user": {
+      "login": "jsmith"
+    },
+    "draft": false,
+    "html_url": "https://github.com/acme-corp/backend-api/pull/42",
+    "diff_url": "https://github.com/acme-corp/backend-api/pull/42.diff",
+    "changed_files": 3,
+    "additions": 85,
+    "deletions": 12
+  },
+  "repository": {
+    "full_name": "acme-corp/backend-api",
+    "owner": {
+      "login": "acme-corp"
+    },
+    "name": "backend-api"
+  },
+  "installation": {
+    "id": 98765
+  }
+}
