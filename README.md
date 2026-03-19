@@ -14,12 +14,12 @@ GitHub Webhook → FastAPI → Worker Pool → AI Agent Loop → Post Review
                    └─ Dedup                   └─ list_directory
 ```
 
-1. **Webhook arrives** — GitHub sends a `pull_request` event (opened, synchronize, reopened)
-2. **Signature verified** — HMAC-SHA256 with constant-time comparison
-3. **Deduplicated** — TTL-based check prevents processing the same delivery twice
-4. **Queued** — Bounded asyncio queue with configurable concurrency
-5. **AI reviews** — GPT-5.4 examines the diff, uses tools to fetch files, produces structured findings
-6. **Results posted** — Inline comments on the PR with severity-based review event (REQUEST_CHANGES for critical/high)
+1. **Webhook arrives** - GitHub sends a `pull_request` event (opened, synchronize, reopened)
+2. **Signature verified** - HMAC-SHA256 with constant-time comparison
+3. **Deduplicated** - TTL-based check prevents processing the same delivery twice
+4. **Queued** - Bounded asyncio queue with configurable concurrency
+5. **AI reviews** - GPT-5.4 examines the diff, uses tools to fetch files, produces structured findings
+6. **Results posted** - Inline comments on the PR with severity-based review event (REQUEST_CHANGES for critical/high)
 
 ## Tech Stack
 
@@ -157,9 +157,9 @@ pytest --tb=long -v          # Verbose output
 
 ## CI/CD
 
-- **CI** — ruff lint, mypy strict, pytest with coverage gate, Docker build
-- **Security** — pip-audit + bandit (on push + weekly schedule)
-- **Dependabot** — automated updates for pip + GitHub Actions
+- **CI** - ruff lint, mypy strict, pytest with coverage gate, Docker build
+- **Security** - pip-audit + bandit (on push + weekly schedule)
+- **Dependabot** - automated updates for pip + GitHub Actions
 
 ## License
 

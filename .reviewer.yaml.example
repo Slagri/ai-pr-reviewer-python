@@ -1,4 +1,4 @@
-# .reviewer.yaml — Per-repository configuration for the AI PR Reviewer
+# .reviewer.yaml - Per-repository configuration for the AI PR Reviewer
 # Place this file in the root of your repository.
 
 # Enable or disable reviews for this repository
