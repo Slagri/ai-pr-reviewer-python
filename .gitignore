@@ -32,11 +32,11 @@ Thumbs.db
 *.pem
 *.key
 
-# Claude Code
-.claude/settings.local.json
-
-# Private docs
+# Private / local
+.claude/
 docs/private/
+LINKEDIN.md
+CV_SECTION.md
 
 # mypy
 .mypy_cache/
