@@ -6,6 +6,7 @@ Each tool has a JSON Schema definition and an async executor.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import structlog
@@ -121,9 +122,9 @@ class ToolExecutor:
 
     def __init__(
         self,
-        get_file_fn: Any,
-        search_fn: Any | None = None,
-        list_dir_fn: Any | None = None,
+        get_file_fn: Callable[[str], Awaitable[str]],
+        search_fn: Callable[[str, str | None], Awaitable[list[str]]] | None = None,
+        list_dir_fn: Callable[[str], Awaitable[list[str]]] | None = None,
     ) -> None:
         self._get_file = get_file_fn
         self._search = search_fn

@@ -36,6 +36,7 @@ class SignatureVerificationMiddleware(BaseHTTPMiddleware):
         github_secret: SecretStr | None = None,
         azdo_secret: SecretStr | None = None,
     ) -> None:
+        # Starlette's BaseHTTPMiddleware expects ASGIApp but FastAPI passes app object
         super().__init__(app)  # type: ignore[arg-type]
         self._github_secret = github_secret
         self._azdo_secret = azdo_secret

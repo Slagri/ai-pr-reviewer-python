@@ -6,6 +6,7 @@ check run → fetch config → fetch diffs → run agent → post review → upd
 from __future__ import annotations
 
 import asyncio
+import fnmatch
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -154,8 +155,6 @@ async def _execute_review(
 
     # Filter ignored paths
     if config.ignore_paths:
-        import fnmatch
-
         diffs = tuple(
             d for d in diffs if not any(fnmatch.fnmatch(d.path, p) for p in config.ignore_paths)
         )

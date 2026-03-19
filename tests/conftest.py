@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import tempfile
+
 import pytest
 
 from reviewer.models import (
@@ -11,6 +13,34 @@ from reviewer.models import (
     PullRequest,
     WebhookEvent,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_env_from_dotenv(monkeypatch: pytest.MonkeyPatch, tmp_path: object) -> None:
+    """Prevent .env file from leaking into test settings.
+
+    pydantic-settings reads .env automatically. Change cwd to a temp dir
+    so no .env file is found, and clear any leaked env vars.
+    """
+    from reviewer.server.dependencies import get_settings
+
+    monkeypatch.chdir(tempfile.gettempdir())
+
+    for key in [
+        "AZURE_OPENAI_ENDPOINT",
+        "AZURE_OPENAI_API_KEY",
+        "AZURE_OPENAI_DEPLOYMENT",
+        "REVIEW_MODEL",
+        "GITHUB_APP_ID",
+        "GITHUB_PRIVATE_KEY",
+        "GITHUB_PRIVATE_KEY_PATH",
+        "GITHUB_WEBHOOK_SECRET",
+        "AZDO_ORGANIZATION",
+        "AZDO_PAT",
+        "AZDO_WEBHOOK_SECRET",
+    ]:
+        monkeypatch.delenv(key, raising=False)
+    get_settings.cache_clear()
 
 
 @pytest.fixture

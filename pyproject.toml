@@ -72,6 +72,7 @@ ignore = [
 "src/reviewer/main.py" = ["TC001", "TC003"]
 "src/reviewer/reviewer/agent.py" = ["TC003"]
 "src/reviewer/reviewer/pipeline.py" = ["TC003"]
+"src/reviewer/reviewer/tools.py" = ["TC003"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["reviewer"]

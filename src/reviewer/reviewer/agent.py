@@ -22,12 +22,12 @@ from openai.types.chat import (
 )
 
 from reviewer.exceptions import AgentError
-from reviewer.models import Category, Finding, Review, Severity, TokenUsage
+from reviewer.models import Category, Finding, PullRequest, Review, Severity, TokenUsage
+from reviewer.reviewer.tools import TOOL_DEFINITIONS, ToolExecutor
+from reviewer.reviewer.trace import AgentTrace
 
 if TYPE_CHECKING:
     from openai import AsyncAzureOpenAI
-from reviewer.reviewer.tools import TOOL_DEFINITIONS, ToolExecutor
-from reviewer.reviewer.trace import AgentTrace
 
 logger = structlog.get_logger()
 
@@ -83,6 +83,7 @@ async def run_review_agent(
     tool_executor: ToolExecutor,
     max_iterations: int = 10,
     cancel_event: asyncio.Event | None = None,
+    timeout_seconds: int = 300,
 ) -> tuple[dict[str, Any], AgentTrace]:
     """Run the AI review agent's tool-use loop.
 
@@ -103,9 +104,18 @@ async def run_review_agent(
         ChatCompletionUserMessageParam(role="user", content=user_prompt),
     ]
 
+    # TOOL_DEFINITIONS is list[dict] but ChatCompletionToolParam is a TypedDict;
+    # the dict literals match the TypedDict shape at runtime.
     tools: list[ChatCompletionToolParam] = TOOL_DEFINITIONS  # type: ignore[assignment]
 
+    agent_start = time.time()
+
     for iteration in range(1, max_iterations + 1):
+        # Check timeout
+        if time.time() - agent_start > timeout_seconds:
+            trace.finish()
+            raise AgentError(f"review timed out after {timeout_seconds}s")
+
         # Check for cancellation (superseded by newer push)
         if cancel_event is not None and cancel_event.is_set():
             trace.finish()
@@ -122,6 +132,9 @@ async def run_review_agent(
                 tools=tools,
                 temperature=0.1,
             )
+        except asyncio.CancelledError:
+            trace.finish()
+            raise
         except Exception as exc:
             trace.add_step(
                 iteration,
@@ -159,6 +172,7 @@ async def run_review_agent(
             messages.append(
                 ChatCompletionAssistantMessageParam(
                     role="assistant",
+                    # OpenAI SDK expects typed tool call params; our dict matches at runtime.
                     tool_calls=tc_params,  # type: ignore[typeddict-item]
                 )
             )
@@ -272,7 +286,7 @@ async def run_review_agent(
 def build_review_from_agent_result(
     review_data: dict[str, Any],
     trace: AgentTrace,
-    pr: Any,
+    pr: PullRequest,
     model: str,
 ) -> Review:
     """Build a Review model from the agent's parsed output and trace."""

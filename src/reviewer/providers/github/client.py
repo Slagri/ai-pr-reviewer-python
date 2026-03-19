@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from datetime import datetime
 
 import httpx
 import jwt
@@ -89,12 +90,15 @@ class GitHubAuth:
             ) from exc
 
         data = response.json()
-        token: str = data["token"]
-        expires_at_str: str = data["expires_at"]
+        token: str | None = data.get("token")
+        expires_at_str: str | None = data.get("expires_at")
+        if not token or not expires_at_str:
+            raise ProviderError(
+                "unexpected response from installation token endpoint",
+                provider="github",
+            )
 
         # Parse ISO 8601 expiry and cache
-        from datetime import datetime
-
         expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00")).timestamp()
         self._token_cache[installation_id] = (token, expires_at)
 

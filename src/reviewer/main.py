@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
+import httpx
 import structlog
 from fastapi import FastAPI
 from openai import AsyncAzureOpenAI
@@ -60,7 +61,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
 
     # Build providers and worker pool
-    review_service, openai_client = _build_providers(settings)
+    review_service, openai_client, http_client = _build_providers(settings)
 
     async def handle_review(event: WebhookEvent, cancel_event: asyncio.Event) -> None:
         if review_service is None or openai_client is None:
@@ -88,18 +89,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Shutdown
     await pool.shutdown(drain_timeout=settings.shutdown_timeout)
+    if http_client is not None:
+        await http_client.aclose()
+    if openai_client is not None:
+        await openai_client.close()
     logger.info("AI PR reviewer stopped")
 
 
 def _build_providers(
     settings: Settings,
-) -> tuple[GitHubReviewService | None, AsyncAzureOpenAI | None]:
-    """Build provider clients from settings. Returns (None, None) if not configured."""
-    import httpx
-
+) -> tuple[GitHubReviewService | None, AsyncAzureOpenAI | None, httpx.AsyncClient | None]:
+    """Build provider clients from settings. Returns (None, None, None) if not configured."""
     if not settings.github_enabled:
         logger.warning("GitHub provider not configured, reviews will be skipped")
-        return None, None
+        return None, None, None
 
     github_auth = build_github_auth(
         app_id=settings.github_app_id or "",
@@ -128,7 +131,7 @@ def _build_providers(
 
     openai_client = AsyncAzureOpenAI(**openai_kwargs)
 
-    return review_service, openai_client
+    return review_service, openai_client, http_client
 
 
 def create_app() -> FastAPI:

@@ -53,6 +53,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         max_requests: int = DEFAULT_RATE,
         window_seconds: int = DEFAULT_WINDOW,
     ) -> None:
+        # Starlette's BaseHTTPMiddleware expects ASGIApp but FastAPI passes app object
         super().__init__(app)  # type: ignore[arg-type]
         self._max_requests = max_requests
         self._refill_rate = max_requests / window_seconds

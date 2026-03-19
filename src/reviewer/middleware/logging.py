@@ -30,8 +30,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
         structlog.contextvars.bind_contextvars(request_id=request_id)
 
+        status_code = 500
         try:
             response = await call_next(request)
+            status_code = response.status_code
         except Exception:
             logger.exception(
                 "request failed",
@@ -45,7 +47,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 "request complete",
                 method=request.method,
                 path=request.url.path,
-                status=response.status_code if "response" in dir() else 500,
+                status=status_code,
                 duration_ms=round(elapsed * 1000, 1),
             )
             structlog.contextvars.unbind_contextvars("request_id")
